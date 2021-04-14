@@ -1,0 +1,78 @@
+chid,TIMESTAMP,USERNAME,RANK_CRIT_STRUCTURAL,RANK_CRIT_FUNCTIONAL,RANK_CRIT_MAINTENANCE,OR_FEATURES,RANK_VIS_ELLERY,RANK_VIS_EMBARCADERO,RANK_VIS_HAMPSHIRE,RANK_VIS_BROADWAY,RANK_VIS_POTRERO,RANK_VIS_MERIDIAN,RANK_DEBRIS_NON_PUNCT,RANK_DEBRIS_PARTICLES,RANK_DEBRIS_PRECIP,RANK_DEBRIS_SLIP,RANK_DEBRIS_PUNCT,DEBRIS_MEAS_NON_PUNCT,DEBRIS_MEAS_PUNCT,DEBRIS_MEAS_SLIP,DEBRIS_MEAS_PARTICLES,DEBRIS_MEAS_PRECIP,OR_MEASUREMENTS,RANK_LANE_POSTPROTECT,RANK_LANE_BUFFERED,RANK_LANE_RAISED,RANK_LANE_STANDARD,RANK_LANE_PARKINGPROTECT,RANK_LANE_CURBPROTECT,MAX_BUFFER,AGE,GENDER,CYCLIST_TYPE,CYCLIST_FREQ
+0,2021/03/17 12:21:47 PM MDT,nichfournier@gmail.com,2,1,3,,2,5,4,3,6,1,4,1,2,3,5,AREA,AREA,AREA,AREA,AREA,,3,2,4,1,5,6,,32,Male,COMMUTER,DAILY
+1,2021/03/17 6:05:55 PM MDT,ktmackenz@gmail.com,3,2,1,Pavement signage ,2,5,3,4,6,1,1,4,3,2,5,AREA,AREA,AREA,DEPTH,DEPTH,"Way to define coverage in relation to distance to cars vs edge of road. For example, debris tends to build up along the curb, so you are forced to ride on the car-side of the lane, and increasing your risk. ",4,2,3,1,5,6,1.0,32,Female,COMMUTER,DAILY
+2,2021/03/22 7:06:59 PM MDT,eodisio@gmail.com,3,2,1,,2,5,3,4,6,1,4,1,2,3,5,AREA,AREA,AREA,AREA,AREA,,4,2,5,1,3,6,3.0,34,Female,SOCIAL,RARELY
+3,2021/03/24 11:13:00 AM MDT,mknodler@umass.edu,1,2,3,,2,5,3,4,6,1,1,2,4,3,5,AREA,AREA,AREA,AREA,AREA,,4,2,3,1,6,5,1.0,45,Male,RECREATIONAL,WEEKLY
+4,2021/03/24 11:24:04 AM MDT,mkeesee@umass.edu,2,3,1,,1,5,3,4,6,2,1,2,4,3,5,AREA,AREA,AREA,AREA,AREA,,6,2,4,1,3,5,2.0,20,Female,SOCIAL,RARELY
+5,2021/03/24 11:24:44 AM MDT,alyssaryan@umass.edu,1,2,3,,2,5,3,4,6,1,2,1,3,4,5,AREA,AREA,VOLUME,VOLUME,DEPTH,,5,2,3,1,4,6,2.0,24,Female,SOCIAL-REC,MONTHLY
+6,2021/03/24 11:28:51 AM MDT,noahgreen@umass.edu,1,2,3,Elevated/grade separation,2,4,3,5,6,1,1,2,4,3,5,AREA,AREA,AREA,AREA,AREA,"% of width covered by hazard, where the denominator is total width without vehicular risk",3,2,6,1,4,5,1.0,19,Male,COMMUTER,DAILY
+7,2021/03/24 12:07:48 PM MDT,bwharvey@umass.edu,3,2,1,,2,4,3,5,6,1,2,4,1,3,5,AREA,AREA,VOLUME,WEIGHT,DEPTH,,4,3,2,1,5,6,3.0,21,Male,RECREATIONAL,WEEKLY
+8,2021/03/24 12:19:29 PM MDT,bjandersen@umass.edu,1,2,3,,2,4,5,3,6,1,1,2,4,3,5,AREA,AREA,AREA,AREA,DEPTH,,3,4,2,1,5,6,2.0,21,Male,RECREATIONAL,WEEKLY
+9,2021/03/24 1:53:36 PM MDT,tlord@umass.edu,1,2,3,,2,5,4,3,6,1,1,2,4,3,5,AREA,AREA,AREA,DEPTH,AREA,,3,2,4,1,5,6,2.0,21,Female,SOCIAL-REC,MONTHLY
+10,2021/03/24 2:40:36 PM MDT,thannon@umass.edu,2,3,1,I think it is hard to bike on the sides of roads that have pavement sloping towards a grate.,2,5,3,4,6,1,2,3,1,4,5,AREA,WEIGHT,AREA,AREA,DEPTH,By amount? (100ft has 30 cans),5,3,2,1,4,6,1.0,22,Male,COMMUTER,DAILY
+11,2021/03/24 6:57:19 PM MDT,Ehennessy@umass.edu,1,3,2,Bicycle safe grates,1,5,3,4,6,2,3,1,4,2,5,AREA,AREA,DEPTH,AREA,VOLUME,,4,2,3,1,5,6,2.0,27,Female,SOCIAL,RARELY
+12,2021/03/24 7:59:23 PM MDT,cfodonnell@umass.edu,3,2,1,,2,5,3,4,6,1,2,1,4,3,5,AREA,AREA,DEPTH,AREA,VOLUME,,5,2,3,1,4,6,3.0,19,Female,SOCIAL-REC,MONTHLY
+13,2021/03/25 6:34:04 AM MDT,baknodler@charter.net,3,1,2,,2,5,3,4,6,1,2,1,4,5,3,AREA,AREA,AREA,AREA,DEPTH,,5,2,3,1,4,6,1.0,42,Female,SOCIAL-REC,MONTHLY
+14,2021/03/25 6:43:00 AM MDT,elisereynard@gmail.com,3,1,2,,2,5,3,4,6,1,1,3,2,5,4,VOLUME,WEIGHT,AREA,DEPTH,AREA,,4,5,2,1,3,6,3.0,41,Female,COMMUTER,DAILY
+15,2021/03/25 6:44:26 AM MDT,B.a.builders41@gmail.com,3,1,2,,2,5,4,3,6,1,2,3,1,4,5,AREA,AREA,VOLUME,VOLUME,AREA,,4,2,3,1,5,6,2.0,53,Female,SOCIAL-REC,MONTHLY
+16,2021/03/25 6:50:50 AM MDT,donnahiersche@gmail.com,2,1,3,,2,5,3,4,6,1,2,1,3,4,5,AREA,AREA,AREA,AREA,AREA,,5,3,2,1,4,6,3.0,45,Female,SOCIAL-REC,MONTHLY
+17,2021/03/25 7:03:26 AM MDT,asaklad@gmail.com,1,2,3,,2,5,3,4,6,1,1,5,4,2,3,AREA,AREA,AREA,AREA,AREA,,4,3,2,1,5,6,2.0,46,Female,SOCIAL-REC,WEEKLY
+18,2021/03/25 7:05:20 AM MDT,volleymom0101@gmail.com,3,1,2,,2,5,3,4,6,1,3,4,2,1,5,VOLUME,VOLUME,AREA,WEIGHT,DEPTH,,3,5,1,2,4,6,5.0,51,Female,SOCIAL-REC,WEEKLY
+19,2021/03/25 7:07:13 AM MDT,mimioneill@yahoo.com,1,2,3,,1,4,3,6,5,2,3,2,1,4,5,WEIGHT,AREA,DEPTH,AREA,VOLUME,,2,3,4,1,5,6,2.0,50,Female,RECREATIONAL,WEEKLY
+20,2021/03/25 7:07:42 AM MDT,allegrawelly@yahoo.com,2,1,3,,4,5,2,3,6,1,4,2,1,5,3,AREA,AREA,AREA,WEIGHT,AREA,,4,2,3,1,6,5,1.0,50,Female,RECREATIONAL,DAILY
+21,2021/03/25 7:13:37 AM MDT,teach82@charter.net,3,2,1,,2,5,3,4,6,1,1,5,2,3,4,AREA,AREA,DEPTH,DEPTH,DEPTH,,5,2,4,1,3,6,1.0,60,Female,SOCIAL-REC,RARELY
+22,2021/03/25 7:26:35 AM MDT,thollandpe@yahoo.com,3,2,1,"Evenness, side of the road should be the same quality and design as the middle. ",2,6,4,3,5,1,3,1,4,2,5,AREA,AREA,AREA,DEPTH,AREA,,3,5,4,1,2,6,1.0,57,Prefer not to say,RECREATIONAL,DAILY
+23,2021/03/25 7:27:52 AM MDT,myndib@gmail.com,3,1,2,,1,5,3,4,6,2,1,2,5,3,4,VOLUME,AREA,DEPTH,WEIGHT,AREA,,4,5,2,1,3,6,2.0,49,Prefer not to say,SOCIAL-REC,MONTHLY
+24,2021/03/25 7:29:38 AM MDT,mbmdo@hampshire.edu,3,1,2,,2,5,3,4,6,1,1,2,4,3,5,VOLUME,VOLUME,AREA,VOLUME,AREA,,4,3,2,1,5,6,2.0,50,Female,SOCIAL-REC,WEEKLY
+25,2021/03/25 7:33:47 AM MDT,teresa@teresanfischer.com,3,1,2,A painted bike lane border,2,5,3,4,6,1,1,4,2,3,5,DEPTH,WEIGHT,AREA,VOLUME,DEPTH,,4,2,3,1,5,6,3.0,50,Female,RECREATIONAL,WEEKLY
+26,2021/03/25 7:38:24 AM MDT,breardon3@hotmail.com,2,1,3,,2,4,3,5,6,1,1,2,3,5,4,AREA,AREA,AREA,AREA,AREA,,4,2,3,1,5,6,5.0,48,Female,SOCIAL-REC,MONTHLY
+27,2021/03/25 8:14:31 AM MDT,gazzillo@ecs.umass.edu,3,2,1,,2,5,3,4,6,1,3,2,1,4,5,AREA,AREA,AREA,AREA,DEPTH,,5,2,4,1,3,6,1.0,33,Female,SOCIAL-REC,WEEKLY
+28,2021/03/25 8:39:01 AM MDT,nanskimtn@charter.net,3,2,1,,2,5,3,4,6,1,1,3,2,4,5,AREA,AREA,AREA,AREA,VOLUME,,6,3,2,1,4,5,3.0,56,Female,RECREATIONAL,DAILY
+29,2021/03/25 8:39:15 AM MDT,PATSMENAGERIE@GMAIL.COM,2,1,3,DIVIDING LINES,2,5,3,4,6,1,4,1,3,2,5,VOLUME,AREA,AREA,DEPTH,AREA,,4,3,2,1,5,6,1.0,58,Non-binary / Non-conforming,RECREATIONAL,DAILY
+30,2021/03/25 8:42:12 AM MDT,abbeygirl1@gmail.com,1,3,2,,2,5,3,4,6,1,1,3,2,4,5,AREA,VOLUME,DEPTH,AREA,VOLUME,,4,2,3,1,6,5,2.0,20,Prefer not to say,RECREATIONAL,WEEKLY
+31,2021/03/25 9:19:06 AM MDT,lindajfuhrmann@gmail.com,1,3,2,,2,5,3,4,6,1,1,2,4,5,3,AREA,AREA,AREA,VOLUME,AREA,,4,3,2,1,5,6,4.0,54,Female,SOCIAL-REC,MONTHLY
+32,2021/03/25 9:34:05 AM MDT,mom2collinsophie@gmail.com,3,1,2,,2,6,3,4,5,1,2,1,4,5,3,AREA,AREA,AREA,AREA,AREA,,4,3,2,1,5,6,2.0,48,Female,SOCIAL-REC,WEEKLY
+33,2021/03/25 10:38:06 AM MDT,tzafian@umass.edu,3,1,2,,2,5,3,4,6,1,1,3,2,5,4,VOLUME,AREA,AREA,AREA,AREA,"If using area for the measurement I would want it to include the full area within which the hazard exists (at least a certain density) not just the area under the hazard itself.  For example, with a puncture hazard, the whole area where broken glass or other discrete puncture hazards are present at a certain density, not just the area directly under the glass/hazard.  ",5,3,4,1,2,6,1.0,50,Female,SOCIAL-REC,WEEKLY
+34,2021/03/25 12:30:05 PM MDT,jgjmak@aol.com,2,1,3,,2,5,3,4,6,1,2,1,3,4,5,DEPTH,AREA,VOLUME,DEPTH,AREA,,5,3,4,1,2,6,1.0,67,Male,SOCIAL-REC,WEEKLY
+35,2021/03/25 12:35:17 PM MDT,vivianwong@umass.edu,1,3,2,,2,5,3,4,6,1,2,1,3,4,5,VOLUME,AREA,AREA,AREA,VOLUME,,5,2,3,1,6,4,2.0,21,Female,SOCIAL,RARELY
+36,2021/03/25 12:38:04 PM MDT,jmccollough@pvpc.org,2,3,1,,2,5,3,4,6,1,3,2,4,5,1,AREA,AREA,AREA,AREA,AREA,,4,3,5,1,2,6,4.0,60,Male,SOCIAL-REC,DAILY
+37,2021/03/25 12:47:43 PM MDT,greeleyhockey@gmail.com,3,1,2,,1,3,6,5,4,2,1,2,4,5,3,DEPTH,AREA,AREA,VOLUME,AREA,,6,3,1,4,5,2,3.0,59,Female,SOCIAL,RARELY
+38,2021/03/25 12:56:20 PM MDT,gmroux@pvpc.org,2,1,3,,2,5,3,4,6,1,1,2,4,3,5,AREA,AREA,AREA,AREA,DEPTH,,4,3,2,1,5,6,1.0,54,Male,SOCIAL-REC,WEEKLY
+39,2021/03/25 1:17:08 PM MDT,jmbncrew@gmail.com,3,1,2,Yes the path should be passable by wheelchairs. ,2,5,3,4,6,1,3,1,2,4,5,DEPTH,AREA,AREA,AREA,DEPTH,,3,2,4,1,6,5,3.0,54,Female,NONCYCLIST,RARELY
+40,2021/03/25 1:19:53 PM MDT,elarner@gmail.com,1,3,2,,2,5,3,4,6,1,4,1,2,5,3,AREA,AREA,AREA,DEPTH,AREA,,6,5,1,4,3,2,2.0,41,Female,SOCIAL,MONTHLY
+41,2021/03/25 1:40:50 PM MDT,lcady@charter.net,3,2,1,,3,5,2,4,6,1,1,4,2,3,5,AREA,AREA,AREA,VOLUME,DEPTH,,3,4,2,1,5,6,2.0,52,Female,SOCIAL-REC,WEEKLY
+42,2021/03/25 2:18:00 PM MDT,r.jammal@yahoo.com,3,1,2,No Manhole grill along path,2,6,3,4,5,1,1,2,3,4,5,VOLUME,AREA,AREA,WEIGHT,DEPTH,,6,5,4,1,3,2,1.0,52,Female,COMMUTER,MONTHLY
+43,2021/03/25 3:11:22 PM MDT,brianchitester@gmail.com,3,1,2,,2,5,3,4,6,1,1,2,3,4,5,AREA,AREA,AREA,AREA,AREA,,4,3,5,1,2,6,5.0,31,Male,COMMUTER,DAILY
+44,2021/03/25 3:19:43 PM MDT,cf1323@hotmail.com,3,2,1,,2,5,3,4,6,1,4,1,2,3,5,AREA,AREA,AREA,AREA,DEPTH,,4,2,3,1,6,5,1.0,58,Female,RECREATIONAL,WEEKLY
+45,2021/03/25 4:58:20 PM MDT,j0ckmomdad@gmail.com,3,2,1,,2,6,4,3,5,1,1,4,2,3,5,AREA,WEIGHT,AREA,DEPTH,VOLUME,,4,3,2,1,5,6,3.0,69,Female,SOCIAL-REC,MONTHLY
+46,2021/03/25 5:37:44 PM MDT,celestero@aol.com,3,1,2,Bike lanes,4,2,5,3,6,1,1,2,5,4,3,AREA,WEIGHT,AREA,VOLUME,DEPTH,,5,2,3,1,4,6,3.0,59,Female,SOCIAL,RARELY
+47,2021/03/25 7:10:37 PM MDT,domaingueamy@yahoo.com,2,3,1,,2,6,1,4,5,3,1,5,2,4,3,WEIGHT,AREA,VOLUME,AREA,DEPTH,,4,5,6,3,1,2,3.0,52,Female,SOCIAL-REC,MONTHLY
+48,2021/03/25 7:13:27 PM MDT,crashngiggles@yahoo.com,3,2,1,,4,2,6,5,3,1,3,5,2,1,4,AREA,DEPTH,VOLUME,WEIGHT,DEPTH,,3,2,4,1,5,6,2.0,43,Male,SOCIAL-REC,MONTHLY
+49,2021/03/26 4:41:43 AM MDT,cfssmain@charter.net,3,1,2,,2,6,5,3,4,1,3,4,5,2,1,VOLUME,AREA,AREA,VOLUME,DEPTH,,2,3,6,5,4,1,1.0,69,Female,SOCIAL-REC,DAILY
+50,2021/03/26 6:48:40 AM MDT,shceer1@yahoo.com,3,1,2,,2,5,3,4,6,1,1,4,2,5,3,WEIGHT,VOLUME,AREA,DEPTH,AREA,,5,4,2,1,3,6,1.0,47,Female,RECREATIONAL,WEEKLY
+51,2021/03/26 6:20:29 PM MDT,chelsea.reynolds20@gmail.com,3,1,2,,2,5,3,4,6,1,2,4,1,3,5,AREA,AREA,AREA,DEPTH,DEPTH,,6,1,4,2,3,5,2.0,29,Female,SOCIAL,MONTHLY
+52,2021/03/27 5:59:41 AM MDT,ianamckinnon@gmail.com,3,1,2,Markings,2,5,3,4,6,1,2,1,4,3,5,AREA,AREA,AREA,AREA,AREA,,4,2,6,1,3,5,3.0,33,Male,RECREATIONAL,WEEKLY
+53,2021/03/29 12:27:26 PM MDT,nicholas.peavy@gmail.com,2,1,3,Lack of dangerous infrastructure.  Things that come to mind for me are drainage grates oriented parallel to bike tires and sidewalk planters that extend over the curb.  I'm sure there are others.,2,5,3,4,6,1,3,2,1,4,5,AREA,AREA,DEPTH,AREA,DEPTH,,4,3,2,1,5,6,1.0,28,Male,COMMUTER,DAILY
+54,2021/03/31 1:55:20 PM MDT,ftainter@umass.edu,3,2,1,,2,5,3,4,6,1,1,2,4,3,5,WEIGHT,VOLUME,AREA,AREA,DEPTH,,4,2,3,1,5,6,1.0,26,Male,SOCIAL-REC,WEEKLY
+55,2021/04/02 4:47:54 PM MDT,kimberly.leung@sfmta.com,1,2,3,,2,5,3,4,6,1,3,1,2,4,5,AREA,AREA,AREA,AREA,AREA,,5,3,2,1,4,6,1.0,33,Female,COMMUTER,DAILY
+56,2021/04/02 4:57:42 PM MDT,alanjuy3@berkeley.edu,2,3,1,,2,5,3,4,6,1,1,2,3,4,5,AREA,AREA,AREA,AREA,AREA,,4,3,2,1,5,6,1.0,32,Male,COMMUTER,DAILY
+57,2021/04/02 5:06:35 PM MDT,bikeway@gmail.com,3,1,2,,2,5,3,4,6,1,2,1,5,3,4,AREA,AREA,AREA,DEPTH,VOLUME,,5,3,2,1,4,6,1.0,32,Female,SOCIAL-REC,WEEKLY
+58,2021/04/02 5:28:47 PM MDT,suicideking65@gmail.com,1,2,3,,2,6,3,4,5,1,2,1,3,4,5,WEIGHT,AREA,AREA,WEIGHT,AREA,,4,3,2,1,5,6,1.0,31,Male,RECREATIONAL,DAILY
+59,2021/04/02 5:39:45 PM MDT,efung@berkeley.edu,1,3,2,,2,5,3,4,6,1,3,1,2,4,5,WEIGHT,AREA,AREA,AREA,DEPTH,,6,5,2,3,4,1,1.0,31,Male,COMMUTER,WEEKLY
+60,2021/04/02 5:53:43 PM MDT,markdreger@hey.com,3,1,2,"I'm unclear what's meant by ""functional"".",2,5,4,3,6,1,1,4,2,3,5,AREA,AREA,AREA,AREA,AREA,,4,2,3,1,5,6,1.0,33,Male,COMMUTER,DAILY
+61,2021/04/02 6:07:31 PM MDT,jparks1228@gmail.com,1,2,3,,2,5,3,4,6,1,2,1,4,5,3,VOLUME,VOLUME,AREA,VOLUME,AREA,"Ice, snow, and water are very different and should be considered separately. Ice can be extremely dangerous. Water is just a nuisance.",4,2,3,1,5,6,1.0,39,Male,COMMUTER,DAILY
+62,2021/04/02 7:20:07 PM MDT,jennymolina@gmail.com,2,3,1,,3,5,2,4,6,1,1,2,4,3,5,AREA,AREA,AREA,AREA,DEPTH,,4,2,3,1,5,6,3.0,38,Female,COMMUTER,WEEKLY
+63,2021/04/02 8:15:14 PM MDT,razelagustino@gmail.com,2,1,3,,2,5,3,4,6,1,4,2,3,1,5,AREA,AREA,AREA,AREA,DEPTH,,4,2,3,1,5,6,2.0,30,Female,COMMUTER,WEEKLY
+64,2021/04/03 7:18:44 AM MDT,17nsolda@gmail.com,3,1,2,,2,5,3,4,6,1,1,3,5,2,4,WEIGHT,AREA,AREA,AREA,DEPTH,,3,2,5,1,4,6,1.0,21,Male,COMMUTER,DAILY
+65,2021/04/03 9:06:46 AM MDT,paulbackhurst97@gmail.com,3,1,2,,2,5,4,3,6,1,4,2,1,3,5,AREA,AREA,AREA,AREA,AREA,,3,2,4,1,5,6,1.0,70,Male,COMMUTER,DAILY
+66,2021/04/03 12:10:40 PM MDT,annie-huynh@berkeley.edu,3,1,2,Concrete elevated bike lanes and walkways at intersections ,2,5,3,4,6,1,2,4,1,3,5,AREA,AREA,AREA,AREA,DEPTH,By material composition (glass is so bad and so common),4,2,3,1,5,6,5.0,24,Female,COMMUTER,WEEKLY
+67,2021/04/03 12:17:44 PM MDT,christinemarieo@gmail.com,3,2,1,,1,5,3,4,6,2,2,4,3,1,5,AREA,AREA,DEPTH,DEPTH,DEPTH,,2,4,3,5,1,6,1.0,36,Female,COMMUTER,DAILY
+68,2021/04/09 8:36:04 AM MDT,poberkeley@gmail.com,2,3,1,,2,5,3,4,6,1,4,3,1,2,5,AREA,AREA,AREA,AREA,DEPTH,,4,2,3,1,5,6,2.0,68,Female,COMMUTER,DAILY
+69,2021/04/09 11:39:43 AM MDT,dayee7803@gmail.com,3,2,1,,3,5,2,4,6,1,1,3,2,4,5,WEIGHT,VOLUME,AREA,AREA,DEPTH,,5,2,3,1,4,6,1.0,43,Female,COMMUTER,DAILY
+70,2021/04/09 4:32:08 PM MDT,lgreenblat@wcctac.org,2,1,3,,2,5,4,3,6,1,2,3,1,4,5,AREA,AREA,DEPTH,AREA,DEPTH,,6,2,5,1,4,3,5.0,54,Female,SOCIAL,RARELY
+71,2021/04/09 10:13:42 PM MDT,bruceoleohlson@hotmail.com,3,2,1,Connectivity - - - (the ability to get from one segment of bikeway to another segment of bikeway without having to bicycle on a public street UNLESS the street has bike lanes.  ,2,5,3,4,6,1,1,2,3,4,5,VOLUME,AREA,AREA,AREA,DEPTH,,5,2,4,1,3,6,1.0,71,Male,COMMUTER,DAILY
+72,2021/04/10 9:56:27 AM MDT,Calinder+caltrans@gmail.com,1,3,2,"lack of potholes, esp. in unlighted/dark areas",3,4,2,5,6,1,3,4,1,2,5,AREA,AREA,VOLUME,AREA,VOLUME,Vehicles in bike lane,3,2,6,1,4,5,3.0,49,Female,COMMUTER,DAILY
+73,2021/04/11 7:39:07 PM MDT,hoatmanstanford@gmail.com,2,3,1,temporary signage blocking the bikelane is common (marking detours or construction work) and it's very important bc it makes bike lanes unusable.,2,5,3,4,6,1,2,4,1,3,5,AREA,AREA,AREA,AREA,AREA,,4,3,2,1,5,6,2.0,36,Male,COMMUTER,DAILY
+74,2021/04/11 9:52:18 PM MDT,dstoeffler@sbcglobal.net,1,2,3,,1,5,3,4,6,2,1,2,3,4,5,AREA,AREA,AREA,AREA,AREA,,5,2,4,1,3,6,2.0,85,Male,RECREATIONAL,DAILY
+75,2021/04/12 9:32:04 AM MDT,kolarik.sarah@gmail.com,2,1,3,,2,5,3,4,6,1,1,4,2,3,5,AREA,AREA,AREA,AREA,AREA,,4,3,2,1,5,6,1.0,26,Female,COMMUTER,DAILY
+76,2021/04/12 5:15:29 PM MDT,warren@marinbike.org,3,2,1,,2,5,3,4,6,1,2,1,4,3,5,WEIGHT,AREA,AREA,DEPTH,AREA,,3,2,5,1,4,6,3.0,34,Male,SOCIAL-REC,DAILY
