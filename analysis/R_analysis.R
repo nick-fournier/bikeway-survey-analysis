@@ -11,7 +11,8 @@
 # Packages
 library(mlogit)
 library(data.table)
-library(ggplot2)
+library(MASS)
+library(broom)
 
 # A column name dictionary for easier subsetting
 col_dict <- list(
@@ -29,7 +30,7 @@ col_dict <- list(
 width_height <- list('POSTPROTECT'    = data.frame('WIDTH' = 0.5, 'HEIGHT' = 3),
                      'BUFFERED'       = data.frame('WIDTH' = 3,   'HEIGHT' = 0),
                      'RAISED'         = data.frame('WIDTH' = 1,   'HEIGHT' = 0.5),
-                     'STANDARD'       = data.frame('WIDTH' = 0.5,   'HEIGHT' = 0),
+                     'STANDARD'       = data.frame('WIDTH' = 0.5, 'HEIGHT' = 0),
                      'PARKINGPROTECT' = data.frame('WIDTH' = 12,  'HEIGHT' = 5),
                      'CURBPROTECT'    = data.frame('WIDTH' = 3,   'HEIGHT' = 0.5)
 )
@@ -55,14 +56,11 @@ bikedata_ranklane <- merge(bikedata_ranklane,
                            by = 'RANK_LANE')
 
 # Normalize data
-minmax <- function(x) 1 + ( x - min(x) ) / ( max(x) - min(x) )
-zscore <- function(x) (x-mean(x))/sd(x)
-
-bikedata_ranklane[ , (c('WIDTH','HEIGHT','AGE')) := lapply(.SD, minmax), .SDcols = c('WIDTH','HEIGHT','AGE')]
-# bikedata_ranklane$WIDTH <- runif(nrow(bikedata_ranklane))
-# bikedata_ranklane$HEIGHT <- runif(nrow(bikedata_ranklane))
-bikedata_ranklane$WIDTH <- 1
-bikedata_ranklane$HEIGHT <- 1
+# minmax <- function(x) ( x - min(x) ) / ( max(x) - min(x) )
+# zscore <- function(x) (x-mean(x))/sd(x)
+# bikedata_ranklane[ , (c('WIDTH','HEIGHT','AGE')) := lapply(.SD, minmax), .SDcols = c('WIDTH','HEIGHT','AGE')]
+# bikedata_ranklane[ , WIDTH := WIDTH + runif(nrow(bikedata_ranklane))]
+# bikedata_ranklane[ , HEIGHT := HEIGHT + runif(nrow(bikedata_ranklane))]
 
 # Order by person-choice ID for clarity and convert to data.frame for mlogit
 bikedata_ranklane <- as.data.frame(bikedata_ranklane[order(chid), ])
@@ -72,15 +70,33 @@ bikedata_mlogit <- dfidx(bikedata_ranklane, choice = "ch", ranked = TRUE,
                          idx = c("chid", "RANK_LANE"), idnames = c("chid", "alt"))
 
 # Estimate model
-summary(rank_lane_res <- mlogit(ch ~ 1 + WIDTH | AGE,
-               bikedata_mlogit, reflevel = "STANDARD"))
+summary(rank_lane_res <- mlogit(ch ~ 1| AGE,
+                                bikedata_mlogit, reflevel = "STANDARD"))
 
 
 
+mod <- polr(factor(ch) ~ WIDTH + HEIGHT + AGE + CYCLIST_TYPE + CYCLIST_FREQ + GENDER, data=bikedata_ranklane)
+tidy(mod)
+summary(mod)
+
+1 - mod$deviance / polr(factor(ch) ~ 1, data=bikedata_ranklane)$deviance
+
+
+pt(q, 448, lower.tail = TRUE)
+
+summary(glm(factor(ch) ~ WIDTH + HEIGHT + AGE + CYCLIST_TYPE + CYCLIST_FREQ + GENDER, data=bikedata_ranklane, family = binomial))
 
 
 #### AGGREGATE RANKING SCORES ####
+agg_ranks <- lapply(c('RANK_CRIT','RANK_VIS','RANK_DEBRIS', 'RANK_LANE'), function(x) {
+  bikedata[ , lapply(.SD, mean), .SDcols = c(col_dict[[x]])]
+})
+names(agg_ranks) <- c('RANK_CRIT','RANK_VIS','RANK_DEBRIS', 'RANK_LANE')
 
 
 
-
+#### AGGREGATE PREFERRED MEASUREMENT UNIT ####
+agg_meas <- rbindlist(lapply(col_dict[['PREF_MEAS']], function(x) {
+  as.data.frame.matrix(t(table(factor(bikedata[[x]] , levels=c('AREA', 'DEPTH', 'VOLUME', 'WEIGHT')))))
+}))
+agg_meas <- cbind('PREF_MEAS' = col_dict[['PREF_MEAS']], agg_meas)

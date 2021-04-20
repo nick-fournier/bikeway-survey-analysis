@@ -1,11 +1,18 @@
 import pandas as pd
-from pandas.core.common import flatten
+import os
 import numpy as np
-# import os
-# import scipy.stats as stats
+from scipy import stats
+from pandas.core.common import flatten
+from rpy2 import robjects as ro
+from rpy2.robjects import pandas2ri
+from rpy2.robjects.packages import importr
 
-# Can't get this to work for some reason... will analyze in R for now
-# from statsmodels.miscmodels.ordinal_model import OrderedModel
+# Install MASS package, contains polr
+# utils = importr('utils')
+# utils.chooseCRANmirror(ind=1)
+# utils.install_packages('MASS')
+# utils.install_packages('broom')
+
 
 new_colnames = {'Timestamp': 'TIMESTAMP',
                 'Username': 'USERNAME',
@@ -76,34 +83,131 @@ cyclist_freq = {'Almost daily, at least once a week if possible':   'DAILY',
                 'Rarely, if ever.':                                 'RARELY'
                 }
 
+width_height = {
+    'POSTPROTECT':      {'WIDTH': 0.5, 'HEIGHT': 3},
+    'BUFFERED':         {'WIDTH': 3,   'HEIGHT': 0},
+    'RAISED':           {'WIDTH': 1,   'HEIGHT': 0.5},
+    'STANDARD':         {'WIDTH': 0.5, 'HEIGHT': 0},
+    'PARKINGPROTECT':   {'WIDTH': 12,  'HEIGHT': 5},
+    'CURBPROTECT':      {'WIDTH': 3,   'HEIGHT': 0.5}
+}
 
-def clean_data(path):
-    data = pd.read_csv(path)
 
-    # Check for duplicates & rename columns for clarity
-    cleaned = data.loc[~data.iloc[:, 1::].duplicated(), ].rename(columns=new_colnames)
+class BikeAnalysis:
+    def __init__(self, data_path, out_path):
+        self.data_path = self.pathcheck(data_path)
+        self.outpath = self.pathcheck(out_path)
 
-    # Cols to clean convert to integer
-    cols = list(flatten([col_dict[k] for k in ['RANK_CRIT', 'RANK_VIS', 'RANK_DEBRIS', 'RANK_LANE']]))
+        # Cleans up data a bit
+        self.data = self.clean_data(self.data_path)
 
-    # Convert ranks to integer
-    cleaned = cleaned.apply(lambda x: x.str.slice(0, 1).astype(int) if x.name in cols else x)
+        # Estimates width and height coefficients
+        self.buffer_coef = self.buffer_fit()
 
-    # Clean up measurement response
-    cleaned = cleaned.apply(lambda x: x.str.upper().str.replace('BY ', '') if x.name in col_dict['PREF_MEAS'] else x)
+        # Gets mean aggregate ranking scores
+        self.rank_scores = self.ranking_scores()
 
-    # Clean up cyclist type & cycling frequency
-    cleaned.CYCLIST_TYPE = cleaned.CYCLIST_TYPE.replace(cyclist_type)
-    cleaned.CYCLIST_FREQ = cleaned.CYCLIST_FREQ.replace(cyclist_freq)
+        # Get frequency counts for mea
+        self.measure_prefs = self.measure_counts()
 
-    # choice id
-    cleaned.index = np.arange(len(cleaned))
-    cleaned.index.name = 'chid'
 
-    # Saves a copy in the same folder
-    fname = '/'.join(path.split('/')[:-1] + ['/cleaned_' + path.split('/')[-1]])
-    cleaned.to_csv(fname)
+    def pathcheck(self, path):
+        if os.path.isdir('.' + '/'.join(path.split('/')[:-1])):
+            path = '.' + path
+
+        if path[-1] != '/' and not os.path.isfile(path):
+            return path + '/'
+        else:
+            return path
+
+    def clean_data(self, path):
+        data = pd.read_csv(path)
+
+        # Check for duplicates & rename columns for clarity
+        cleaned = data.loc[~data.iloc[:, 1::].duplicated(), ].rename(columns=new_colnames)
+
+        # Cols to clean convert to integer
+        cols = list(flatten([col_dict[k] for k in ['RANK_CRIT', 'RANK_VIS', 'RANK_DEBRIS', 'RANK_LANE']]))
+
+        # Convert ranks to integer
+        cleaned = cleaned.apply(lambda x: x.str.slice(0, 1).astype(int) if x.name in cols else x)
+
+        # Clean up measurement response
+        cleaned = cleaned.apply(lambda x: x.str.upper().str.replace('BY ', '') if x.name in col_dict['PREF_MEAS'] else x)
+
+        # Clean up cyclist type & cycling frequency
+        cleaned.CYCLIST_TYPE = cleaned.CYCLIST_TYPE.replace(cyclist_type)
+        cleaned.CYCLIST_FREQ = cleaned.CYCLIST_FREQ.replace(cyclist_freq)
+
+        # choice id
+        cleaned.index = np.arange(len(cleaned))
+        cleaned.index.name = 'chid'
+
+        # Saves a copy in the same folder
+        # fname = '/'.join(path.split('/')[:-1] + ['/cleaned_' + path.split('/')[-1]])
+        fname = self.outpath + '/cleaned_' + self.data_path.split('/')[-1]
+        cleaned.to_csv(fname)
+
+        return cleaned
+
+    def buffer_fit(self):
+        # Reshape to long form
+        rank_data = pd.melt(self.data.reset_index(),
+                            id_vars=['chid'] + col_dict['DEMOGS'],
+                            value_vars=col_dict['RANK_LANE'])
+
+        # Remove prefix
+        rank_data.variable = rank_data.variable.str.replace('RANK_LANE_', '')
+
+        # Turn width-height dict to DataFrame
+        df_heightwidth = pd.DataFrame.from_records(width_height).T.reset_index().rename(columns={'index': 'variable'})
+
+        # Merge width and height
+        rank_data = rank_data.merge(df_heightwidth, on='variable')
+
+        # Initialize packages
+        MASS = importr('MASS')
+        broom = importr('broom')
+        R = ro.r
+        pandas2ri.activate()
+
+        # Pass pandas DF to R DF and run MASS::polr()
+        f = 'factor(value) ~ WIDTH + HEIGHT + AGE + CYCLIST_TYPE + CYCLIST_FREQ + GENDER'
+        model_results = MASS.polr(formula=f, data=rank_data)
+        df_results = R.tidy(model_results)
+
+        # Get Degrees of Freedom
+        n = rank_data.shape[0]
+        nvars = df_results.loc[df_results['coef.type'] == 'coefficient'].shape[0]
+        DegFree = n - nvars - 1
+
+        # Calc p-value
+        df_results['p.value'] = stats.t.sf(np.abs(df_results.statistic), DegFree) * 2
+
+        # Save to CSV
+        df_results.to_csv(self.outpath + '/buffer_coefs.csv')
+        rank_data.to_csv(self.outpath + '/buffer_dim_data.csv')
+
+        return df_results
+
+    def ranking_scores(self):
+        agg_cols = {}
+        for var in ['RANK_CRIT', 'RANK_VIS', 'RANK_DEBRIS', 'RANK_LANE']:
+            agg_cols[var] = self.data[col_dict[var]].mean(axis=0).to_dict()
+
+        return agg_cols
+
+    def measure_counts(self):
+        agg_meas = {}
+        for c in col_dict['PREF_MEAS']:
+            count = {'AREA': 0, 'VOLUME': 0, 'WEIGHT': 0, 'DEPTH': 0}
+            count.update(self.data[c].value_counts().to_dict())
+            agg_meas[c] = count
+
+        return pd.DataFrame(agg_meas).T
+
 
 
 if __name__ == "__main__":
-    clean_data('../data/survey_data_download_latest.csv')
+    path = './data/survey_data_download_latest.csv'
+    results = BikeAnalysis(data_path=path, out_path='./output/')

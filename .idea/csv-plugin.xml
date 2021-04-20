@@ -10,7 +10,21 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\analysis\R_plotting.R">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\analysis\py_analysis.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\analysis\py_clean_data.py">
           <value>
             <Attribute>
               <option name="separator" value="," />
