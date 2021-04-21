@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import numpy as np
+import json
 from scipy import stats
 from pandas.core.common import flatten
 from rpy2 import robjects as ro
@@ -12,6 +13,12 @@ from rpy2.robjects.packages import importr
 # utils.chooseCRANmirror(ind=1)
 # utils.install_packages('MASS')
 # utils.install_packages('broom')
+
+# Initialize packages
+MASS = importr('MASS')
+broom = importr('broom')
+R = ro.r
+pandas2ri.activate()
 
 
 new_colnames = {'Timestamp': 'TIMESTAMP',
@@ -102,7 +109,7 @@ class BikeAnalysis:
         self.data = self.clean_data(self.data_path)
 
         # Estimates width and height coefficients
-        self.buffer_coef = self.buffer_fit()
+        self.buffer_coef, self.dim_data = self.buffer_fit()
 
         # Gets mean aggregate ranking scores
         self.rank_scores = self.ranking_scores()
@@ -110,6 +117,11 @@ class BikeAnalysis:
         # Get frequency counts for mea
         self.measure_prefs = self.measure_counts()
 
+        # Saving output
+        self.save()
+
+        # Generate plots
+        self.plot()
 
     def pathcheck(self, path):
         if os.path.isdir('.' + '/'.join(path.split('/')[:-1])):
@@ -143,11 +155,6 @@ class BikeAnalysis:
         cleaned.index = np.arange(len(cleaned))
         cleaned.index.name = 'chid'
 
-        # Saves a copy in the same folder
-        # fname = '/'.join(path.split('/')[:-1] + ['/cleaned_' + path.split('/')[-1]])
-        fname = self.outpath + '/cleaned_' + self.data_path.split('/')[-1]
-        cleaned.to_csv(fname)
-
         return cleaned
 
     def buffer_fit(self):
@@ -165,12 +172,6 @@ class BikeAnalysis:
         # Merge width and height
         rank_data = rank_data.merge(df_heightwidth, on='variable')
 
-        # Initialize packages
-        MASS = importr('MASS')
-        broom = importr('broom')
-        R = ro.r
-        pandas2ri.activate()
-
         # Pass pandas DF to R DF and run MASS::polr()
         f = 'factor(value) ~ WIDTH + HEIGHT + AGE + CYCLIST_TYPE + CYCLIST_FREQ + GENDER'
         model_results = MASS.polr(formula=f, data=rank_data)
@@ -184,11 +185,7 @@ class BikeAnalysis:
         # Calc p-value
         df_results['p.value'] = stats.t.sf(np.abs(df_results.statistic), DegFree) * 2
 
-        # Save to CSV
-        df_results.to_csv(self.outpath + '/buffer_coefs.csv')
-        rank_data.to_csv(self.outpath + '/buffer_dim_data.csv')
-
-        return df_results
+        return df_results, rank_data
 
     def ranking_scores(self):
         agg_cols = {}
@@ -206,7 +203,21 @@ class BikeAnalysis:
 
         return pd.DataFrame(agg_meas).T
 
+    def save(self):
+        # Save to CSV
+        self.data.to_csv(self.outpath + '/cleaned_' + self.data_path.split('/')[-1])
+        self.buffer_coef.to_csv(self.outpath + '/buffer_coefs.csv')
+        self.dim_data.to_csv(self.outpath + '/buffer_dim_data.csv')
+        self.measure_prefs.to_csv(self.outpath + '/measurement_prefs.csv')
 
+        # Serializing to json string
+        json_object = json.dumps(self.rank_scores, indent=4)
+        # Writing to .json
+        with open(self.outpath + '/avg_ranks.json', 'w') as f:
+            f.write(json_object)
+
+    def plot(self):
+        R.source('R_plotting.R')
 
 if __name__ == "__main__":
     path = './data/survey_data_download_latest.csv'

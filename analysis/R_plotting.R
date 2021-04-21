@@ -8,37 +8,37 @@ library(ggplot2)
 library(data.table)
 library(stringr)
 library(ggrepel)
+library(extrafont)
 
 #### PRE-PROCESS DATA FOR PLOTTING ####
-get_plotdat <- function(path = "./output/") {
-  # LOAD DATA
-  data <- fread(paste0(path,'cleaned_survey_data_download_latest.csv'))[!is.na(MAX_BUFFER),]
+# GRABS THE COLNAMES BASED ON PREFIX
+get_vars <- function(var, df) colnames(df)[grepl(var, colnames(df))]
+# PROCESS THE PLOT DATA INTO A LIST OF DATAFRAMES
+get_plotdat <- function(surveydata, dimdata) {
   plotdat <- list()
 
   # AGE & GENDER
-  plotdat[['agesex']] <- data
+  plotdat[['agesex']] <- surveydata
   plotdat[['agesex']]$AGEBIN <- .bincode(plotdat[['agesex']]$AGE, breaks=seq(0,100,10))
   plotdat[['agesex']] <- plotdat[['agesex']][,.N, by=.(AGEBIN,GENDER)]
   plotdat[['agesex']][ , N := N/sum(N)]
 
   #CYCLIST TYPE & FREQ
-  plotdat[['typefreq']] <- data[,.N, by=.(CYCLIST_TYPE,CYCLIST_FREQ)]
+  plotdat[['typefreq']] <- surveydata[,.N, by=.(CYCLIST_TYPE,CYCLIST_FREQ)]
   freq_levels <- plotdat[['typefreq']][ , sum(N), by=CYCLIST_FREQ][order(V1),CYCLIST_FREQ]
   type_levels <- plotdat[['typefreq']][ , sum(N), by=CYCLIST_TYPE][order(V1),CYCLIST_TYPE]
   plotdat[['typefreq']][ , CYCLIST_FREQ := factor(CYCLIST_FREQ, levels = freq_levels)]
   plotdat[['typefreq']][ , CYCLIST_TYPE := factor(CYCLIST_TYPE, levels = type_levels)]
   plotdat[['typefreq']][ , N := N/sum(N)]
 
-
   # CRITERIA
-  plotdat[['critera']] <- melt(data, measure.vars = colnames(data)[grepl("RANK_CRIT", colnames(data))])
-
+  plotdat[['critera']] <- melt(surveydata, measure.vars = get_vars('RANK_CRIT', surveydata))
   # MAX BUFFER
-  plotdat[['buffer_max']] <- data[ , .N, by=.(9*MAX_BUFFER,CYCLIST_TYPE)]
+  plotdat[['buffer_max']] <- surveydata[ , .N, by=.(9*MAX_BUFFER,CYCLIST_TYPE)]
   plotdat[['buffer_max']][ , N := N/sum(N)]
 
   # BUFFER DIMENSION DIST
-  plotdat[['buffer_dim']] <- fread(paste0(path,'buffer_dim_data.csv'))
+  plotdat[['buffer_dim']] <- dimdata
   buffer_levels <- plotdat[['buffer_dim']][ , mean(value), by = variable][order(V1), variable]
   plotdat[['buffer_dim']][ , variable := factor(variable, levels = buffer_levels)]
 
@@ -46,36 +46,34 @@ get_plotdat <- function(path = "./output/") {
   plotdat[['buffer_dim_xy']] <- plotdat[['buffer_dim']][ , .(meanval=mean(value)),by=.(variable,WIDTH,HEIGHT)]
 
   # DEBRIS RANK
-  plotdat[['debris']] <- melt(data, measure.vars = colnames(data)[grepl("RANK_DEBRIS", colnames(data))])
+  plotdat[['debris']] <- melt(surveydata, measure.vars = get_vars('RANK_DEBRIS', surveydata))
 
   # MEASUREMENT PREF
-  plotdat[['measurement']] <- melt(data, measure.vars = colnames(data)[grepl("DEBRIS_MEAS", colnames(data))])
+  plotdat[['measurement']] <- melt(surveydata, measure.vars = get_vars('DEBRIS_MEAS', surveydata))
 
   # VISILITY
-  plotdat[['visibility']] <- melt(data, measure.vars = colnames(data)[grepl("RANK_VIS", colnames(data))])
+  plotdat[['visibility']] <- melt(surveydata, measure.vars = get_vars('RANK_VIS', surveydata))
   vis_levels <- plotdat[['visibility']][ , mean(value), by = variable][order(V1), variable]
   plotdat[['visibility']][ , variable := factor(variable, levels = vis_levels)]
 
-
   return(plotdat)
 }
-
-#### FANCY LABELS ####
-get_labels <- function() {
+# FANCY LABELS
+get_labels <- function(surveydata, dimdata) {
   labs <- list()
 
-  labs[['meas_unit']] <- sapply(unique(data$DEBRIS_MEAS_PARTICLES), str_to_sentence)
-  labs[['type']] <- sapply(unique(data$CYCLIST_TYPE), str_to_sentence)
-  labs[['freq']] <- sapply(unique(data$CYCLIST_FREQ), str_to_sentence)
+  labs[['meas_unit']] <- sapply(unique(surveydata$DEBRIS_MEAS_PARTICLES), str_to_sentence)
+  labs[['type']] <- sapply(unique(surveydata$CYCLIST_TYPE), str_to_sentence)
+  labs[['freq']] <- sapply(unique(surveydata$CYCLIST_FREQ), str_to_sentence)
 
   labs[['critera']] <- sapply(
-    colnames(data)[grepl("RANK_CRIT_", colnames(data))],
+    get_vars("RANK_CRIT_",surveydata),
     function(x) {
       str_to_sentence(gsub('RANK_CRIT_','',x))
     })
 
   labs[['visibility']] <- sapply(
-    colnames(data)[grepl("RANK_VIS", colnames(data))],
+    get_vars("RANK_VIS",surveydata),
     function(x) {
       out <- str_to_sentence(gsub('RANK_VIS_','',x))
       if(out %in% c('Broadway','Embarcadero','Potrero'))
@@ -102,7 +100,7 @@ get_labels <- function() {
                   "PARKINGPROTECT" = "Parking protected",
                   "CURBPROTECT" = "Curb protected")
 
-  labs[['buffertype']] <- unique(fread('./output/buffer_dim_data.csv')[,.(variable,WIDTH,HEIGHT)])
+  labs[['buffertype']] <- unique(dimdata[,.(variable,WIDTH,HEIGHT)])
   formatted <- apply(labs[['buffertype']], 1, function(x) {
     paste0(labs[['buffertype_nodim']][x['variable']], ' (W:', x['WIDTH'], ' H: ', x['HEIGHT'],')')
   })
@@ -111,30 +109,44 @@ get_labels <- function() {
 
   return(labs)
 }
+# EFFECTIVE BUFFER FUNCTION
+func_Wbuf <- function(Wbuf, Hbuf) Wmax * (1 - exp(-coefs['WIDTH'] * Wbuf - coefs['HEIGHT'] * Hbuf))
+# FANCY BINNED LABELS, PERCENTS
+binlabel_percent <- function(xseq) {
+  xseq = scales::percent(xseq, accuracy=1)
+  xseq = paste(xseq[-length(xseq)], xseq[-1], sep = "-")
+  return(xseq)
+}
+# FANCY BINNED LABELS
+binlabel <- function(xseq) paste(xseq[-length(xseq)], xseq[-1], sep = "-")
+# CROSS SECTIONAL LOS SCORE ADJUSTMENT
+func_Fw <- function(effbuf) -0.005*(5 + effbuf)^2
 
 
 #### PLOTTING ####
-outpath <- "./output/"
-dir.create('./output/plots', showWarnings = FALSE)
-plotdat <- get_plotdat()
-labs <- get_labels()
+outpath <- "../output/"
+#### LOAD DATA ####
+survey_data <- fread(paste0(outpath,'cleaned_survey_data_download_latest.csv'))[!is.na(MAX_BUFFER),]
+dim_data <- fread(paste0(outpath,'buffer_dim_data.csv'))
+coef_data <- fread(paste0(outpath,'buffer_coefs.csv'))
 
+dir.create('./output/plots', showWarnings = FALSE)
+plotdat <- get_plotdat(surveydata=survey_data, dimdata=dim_data)
+labs <- get_labels(surveydata=survey_data, dimdata=dim_data)
 
 #### AGE & GENDER DIST ####
-ggplot(data, aes(x=AGE, fill=GENDER)) +
+ggplot(survey_data, aes(x=AGE, fill=GENDER)) +
   geom_histogram(binwidth = 10, color='black', aes(y = (..count..)/sum(..count..))) +
   annotate('text', x= 93, y=0.01, hjust=0, vjust=0,
-           label=paste0('Mean: ', round(mean(data$AGE)),
-                        '\nStd Dev: ', round(sd(data$AGE)),
-                        paste0('\n',paste(c('Min:','Max:'), range(data$AGE)),collapse = ""))) +
+           label=paste0('Mean: ', round(mean(survey_data$AGE)),
+                        '\nStd Dev: ', round(sd(survey_data$AGE)),
+                        paste0('\n',paste(c('Min:','Max:'), range(survey_data$AGE)),collapse = ""))) +
   scale_y_continuous('Response rate (%)', labels = scales::percent, expand=c(0, 0)) +
   scale_x_continuous('Age') +
   scale_fill_brewer('Gender', palette = 'Set2') +
-  coord_cartesian(xlim=c(-5,0)+range(data$AGE), ylim=c(0,0.3), clip = 'off') +
+  coord_cartesian(xlim=c(-5,0)+range(survey_data$AGE), ylim=c(0,0.3), clip = 'off') +
   theme_bw()
 ggsave(paste0(outpath,'plots/plt_agegender.png'), width = 6, height=4, dpi=300)
-
-
 
 
 #### CYCLIST TYPE & FREQ DIST ####
@@ -203,10 +215,10 @@ ggsave(paste0(outpath,'plots/plt_visibility.png'), width = 7, height=4, dpi=300)
 
 
 #### MAX BUFFER DISTRIBUTION ####
-ggplot(plotdat[['buffer_max']], aes(x=mean(9*data$MAX_BUFFER),y=0.15)) +
+ggplot(plotdat[['buffer_max']], aes(x=mean(9*survey_data$MAX_BUFFER),y=0.15)) +
   geom_col(aes(x=MAX_BUFFER, y=N, fill=CYCLIST_TYPE), color='black') +
   scale_y_continuous('Response rate (%)', labels = scales::percent, expand=c(0, 0)) +
-  scale_x_continuous(paste('Maximum preferred buffer (ft)\n(Average:',round(mean(9*data$MAX_BUFFER),2),'ft)')) +
+  scale_x_continuous(paste('Maximum preferred buffer (ft)\n(Average:',round(mean(9*survey_data$MAX_BUFFER),2),'ft)')) +
   scale_fill_brewer('Cyclist Type', palette = 'Set2', labels = labs[['type']]) +
   coord_cartesian(ylim=c(0, .5)) +
   theme_bw()
@@ -278,5 +290,72 @@ ggplot(melt(plotdat[['buffer_dim']], value.name = 'DIST',
   theme(legend.position = 'bottom')
 ggsave(paste0(outpath,'plots/plt_bufferloess.png'), width = 5, height=4, dpi=300)
 
+
 #### FITTED BUFFER FUNCTION ####
+Wmax <- 9*mean(survey_data$MAX_BUFFER)
+coefs <- with(coef_data[term %in% c('WIDTH','HEIGHT'), .(term,estimate)], structure(estimate, names = term))
+
+labs[['coefs']] <- c(as.expression(bquote('Horizontal component:'~beta[W]==.(round(coefs['WIDTH'],4)))),
+                     as.expression(bquote('Vertical component:'~beta[H]==.(round(coefs['HEIGHT'],4)))))
+
+# DENSITY GRID
+plotdat[['grid']] <- data.table(expand.grid(Wbuf=seq(0,20,0.5), Hbuf=seq(0,6,0.5)))
+plotdat[['grid']][ , effWbuf := func_Wbuf(Wbuf, Hbuf)]
+plotdat[['grid']][ , Fw := func_Fw(effWbuf)]
+
+labs[['Fw']] <- paste(sprintf('%.2f', seq(floor(min(plotdat[['grid']]$Fw)),-1, length.out=8)),
+                      sprintf('%.2f', seq(ceiling(min(plotdat[['grid']]$Fw)),0, length.out=8)), sep=" to ")
+
+#### BUFFER FUNC FORM ####
+ggplot(data.frame(x=c(0,20)), aes(x)) +
+  stat_function(fun = function(x) func_Wbuf(x,0), aes(linetype = "h", color="h"), size=1) +
+  stat_function(fun = function(x) func_Wbuf(0,x), aes(linetype = "v", color="v"), size=1) +
+  scale_x_continuous('Physical buffer distance, height or width (ft)', expand = c(0,0)) +
+  scale_y_continuous(expression('Effective buffer'~(W[buf]^"*")), expand = c(0,0)) +
+  scale_linetype('Buffer type', labels = labs[['coefs']]) +
+  scale_color_brewer('Buffer type', palette = 'Dark2', labels = labs[['coefs']]) +
+  theme_classic() +
+  coord_cartesian(xlim=c(0,15), ylim=c(0,20)) +
+  theme(legend.position = c(0.8,0.4),
+        legend.direction = 'vertical',
+        legend.margin = margin(-2.5,0,0,0, unit="pt"),
+        legend.key.height = unit(1, "pt"),
+        legend.text.align = 0,
+        legend.background = element_rect(colour = "transparent", fill = "transparent"),
+        legend.key = element_rect(fill = "transparent", colour = "transparent"))
+ggsave(paste0(outpath,'plots/plt_effbuffer_coefs.png'), width = 6, height=4, dpi=300)
+
+
+#### BUFFER FUNC DENSITY FORM ####
+binsize <- 2
+ggplot(plotdat[['grid']], aes(Wbuf, Hbuf, z=effWbuf)) +
+  geom_contour_filled(binwidth = binsize) +
+  geom_contour(binwidth=binsize, aes(color=..level..), size=0.05) +
+  scale_color_continuous(low="black", high="black", guide=F) +
+  scale_x_continuous(expression("Buffer width, "~italic(W[buf])~" (ft)"), breaks=0:20, expand = c(0,0)) +
+  scale_y_continuous(expression("Buffer height, "~italic(H[buf])~" (ft)"), expand = c(0,0)) +
+  scale_fill_brewer('Effective buffer',
+                    labels = paste(binlabel(seq(0,Wmax,by=binsize)),'ft')) +
+  coord_fixed(xlim = c(0, 10), ylim = c(0, 5)) +
+  theme_bw() +
+  theme(legend.key = element_rect(fill = 'transparent', color='black'),
+        legend.position = "right",
+        legend.margin = margin(-5,0,0,0, unit="pt"),
+        legend.text.align = 0)
+ggsave(paste0(outpath,'plots/plt_effbuffer_density.png'), width = 6, height=4, dpi=300)
+
+
+#### CROSS SECTION LOS FACTOR ####
+ggplot(plotdat[['grid']], aes(x=Wbuf, y=Hbuf,  z = Fw)) +
+  geom_contour_filled(bins = 8) +
+  scale_fill_brewer(expression("Cross-section\nadjustment factor,"~F[w]),
+                    palette = "YlGnBu", direction = -1, drop = T)+
+  scale_x_continuous(expression("Buffer width, "~italic(W[buf])~" (ft)"), expand = c(0,0)) +
+  scale_y_continuous(expression("Buffer height, "~italic(H[buf])~" (ft)"), expand = c(0,0)) +
+  coord_fixed(xlim = c(0,6), ylim = c(0,3)) +
+  theme_bw() +
+  theme(legend.position = "right")
+ggsave(paste0(outpath,'plots/plt_effbuffer_los.png'), width = 6, height=4, dpi=300)
+
+
 
