@@ -9,6 +9,7 @@ library(data.table)
 library(stringr)
 library(ggrepel)
 library(extrafont)
+library(viridis)
 
 #### PRE-PROCESS DATA FOR PLOTTING ####
 # GRABS THE COLNAMES BASED ON PREFIX
@@ -23,13 +24,17 @@ get_plotdat <- function(surveydata, dimdata) {
   plotdat[['agesex']] <- plotdat[['agesex']][,.N, by=.(AGEBIN,GENDER)]
   plotdat[['agesex']][ , N := N/sum(N)]
 
-  #CYCLIST TYPE & FREQ
-  plotdat[['typefreq']] <- surveydata[,.N, by=.(CYCLIST_TYPE,CYCLIST_FREQ)]
-  freq_levels <- plotdat[['typefreq']][ , sum(N), by=CYCLIST_FREQ][order(V1),CYCLIST_FREQ]
-  type_levels <- plotdat[['typefreq']][ , sum(N), by=CYCLIST_TYPE][order(V1),CYCLIST_TYPE]
+  # CYCLIST TYPE & FREQ
+  plotdat[['typefreq']] <- data.table(table(surveydata[ ,.(CYCLIST_TYPE, CYCLIST_FREQ)]) / nrow(surveydata))
+  freq_levels <- c('DAILY','WEEKLY','MONTHLY','RARELY')
+  type_levels <- c('NONCYCLIST', 'SOCIAL', 'SOCIAL-REC', 'RECREATIONAL', 'COMMUTER')
+  # type_levels <- plotdat[['typefreq']][ , sum(value), by=CYCLIST_TYPE][order(V1),CYCLIST_TYPE]
   plotdat[['typefreq']][ , CYCLIST_FREQ := factor(CYCLIST_FREQ, levels = freq_levels)]
   plotdat[['typefreq']][ , CYCLIST_TYPE := factor(CYCLIST_TYPE, levels = type_levels)]
-  plotdat[['typefreq']][ , N := N/sum(N)]
+
+  # GROUPED CATEGORY
+  # plotdat[['typefreq']][ ]
+
 
   # CRITERIA
   plotdat[['critera']] <- melt(surveydata, measure.vars = get_vars('RANK_CRIT', surveydata))
@@ -66,7 +71,7 @@ get_labels <- function(surveydata, dimdata) {
   labs[['type']] <- sapply(unique(surveydata$CYCLIST_TYPE), str_to_sentence)
   labs[['freq']] <- sapply(unique(surveydata$CYCLIST_FREQ), str_to_sentence)
 
-  labs[['critera']] <- sapply(
+  labs[['criteria']] <- sapply(
     get_vars("RANK_CRIT_",surveydata),
     function(x) {
       str_to_sentence(gsub('RANK_CRIT_','',x))
@@ -124,11 +129,16 @@ func_Fw <- function(effbuf) -0.005*(5 + effbuf)^2
 
 
 #### PLOTTING ####
-outpath <- "../output/"
+if(length(list.files('../output')) > 0) {
+  outpath <- "../output/"
+} else {
+  outpath <- "./output/"
+}
+
 #### LOAD DATA ####
-survey_data <- fread(paste0(outpath,'cleaned_survey_data_download_latest.csv'))[!is.na(MAX_BUFFER),]
+survey_data <- fread(paste0(outpath,'cleaned_survey_data.csv'))[!is.na(MAX_BUFFER),]
 dim_data <- fread(paste0(outpath,'buffer_dim_data.csv'))
-coef_data <- fread(paste0(outpath,'buffer_coefs.csv'))
+coef_data <- fread(paste0(outpath,'buffer_coefssimple.csv'))
 
 dir.create('./output/plots', showWarnings = FALSE)
 plotdat <- get_plotdat(surveydata=survey_data, dimdata=dim_data)
@@ -136,7 +146,7 @@ labs <- get_labels(surveydata=survey_data, dimdata=dim_data)
 
 #### AGE & GENDER DIST ####
 ggplot(survey_data, aes(x=AGE, fill=GENDER)) +
-  geom_histogram(binwidth = 10, color='black', aes(y = (..count..)/sum(..count..))) +
+  geom_histogram(binwidth = 5, color='black', aes(y = (..count..)/sum(..count..))) +
   annotate('text', x= 93, y=0.01, hjust=0, vjust=0,
            label=paste0('Mean: ', round(mean(survey_data$AGE)),
                         '\nStd Dev: ', round(sd(survey_data$AGE)),
@@ -144,20 +154,24 @@ ggplot(survey_data, aes(x=AGE, fill=GENDER)) +
   scale_y_continuous('Response rate (%)', labels = scales::percent, expand=c(0, 0)) +
   scale_x_continuous('Age') +
   scale_fill_brewer('Gender', palette = 'Set2') +
-  coord_cartesian(xlim=c(-5,0)+range(survey_data$AGE), ylim=c(0,0.3), clip = 'off') +
-  theme_bw()
-ggsave(paste0(outpath,'plots/plt_agegender.png'), width = 6, height=4, dpi=300)
+  coord_cartesian(xlim=c(-5,0)+range(survey_data$AGE), ylim=c(0,0.2), clip = 'off') +
+  theme_bw() +
+  theme(legend.justification = 'top')
+
+ggsave(paste0(outpath,'plots/plt_agegender.png'), width = 9, height=3, dpi=300)
 
 
 #### CYCLIST TYPE & FREQ DIST ####
-ggplot(plotdat[['typefreq']], aes(x=CYCLIST_TYPE, y=N, fill=CYCLIST_FREQ)) +
-  geom_col(color='black') +
-  scale_y_continuous('Response rate (%)', labels = scales::percent, expand=c(0, 0)) +
-  scale_x_discrete('Cyclist Type', labels = labs[['type']]) +
-  scale_fill_brewer('Cycling Frequency', palette = 'Set2', labels = labs[['freq']]) +
-  coord_cartesian(ylim=c(0,0.10*round(max(plotdat[['typefreq']][ , sum(N), by=CYCLIST_TYPE]$V1)/0.10))) +
+# plotdat[['typefreq']][ , .bincode(value, breaks = seq(0,ceiling(10*max(value))/10,0.05), include.lowest = T)]
+ggplot(plotdat[['typefreq']], aes(x=CYCLIST_TYPE, y=CYCLIST_FREQ, fill=N)) +
+  geom_tile() +
+  geom_text(aes(label = paste0(round(100*N),'%')), fontface = "bold", size = 4) +
+  scale_y_discrete('Bicycling Frequency', labels = labs[['freq']], expand=c(0, 0)) +
+  scale_x_discrete('Bicyclist Type', labels = labs[['type']], expand=c(0, 0)) +
+  scale_fill_viridis("Proportion of\nresponses", option = 'mako', direction = -1, alpha=0.8, labels = scales::percent) +
+  coord_fixed(ratio = 4/5) +
   theme_bw()
-ggsave(paste0(outpath,'plots/plt_typefreq.png'), width = 6, height=4, dpi=300)
+ggsave(paste0(outpath,'plots/plt_typefreq.png'), width = 7, height=4, dpi=300)
 
 
 #### RANK CRITERIA ####
@@ -166,12 +180,13 @@ ggplot(plotdat[['critera']][ , .(MEAN=mean(value), SD=sd(value)), by=.(variable,
   geom_col(position = 'dodge') + #, fill='#4daf4a', color='black') +
   geom_point(aes(group=CYCLIST_TYPE), position=position_dodge(width = 0.9)) +
   geom_errorbar(aes(ymin=MEAN-SD, ymax=MEAN+SD), width=.5, position = position_dodge(.9)) +
-  scale_x_discrete('Criteria', labels = labs[['criteria']]) +
+  scale_x_discrete('Pavement Quality Criteria', labels = labs[['criteria']]) +
   scale_y_continuous('Average rank (1-3)', expand=c(0, 0)) +
-  scale_fill_brewer('Cycling Type', palette = 'Set2', labels = labs[['type']]) +
+  scale_fill_brewer('Bicyclist Type', palette = 'Set2', labels = labs[['type']]) +
   coord_cartesian(ylim=c(0, 3.5)) +
-  theme_bw()
-ggsave(paste0(outpath,'plots/plt_critera.png'), width = 6, height=4, dpi=300)
+  theme_bw() +
+  theme(legend.position = 'bottom')
+ggsave(paste0(outpath,'plots/plt_critera.png'), width = 7, height=4, dpi=300)
 
 
 #### MEASUREMENT PREFERENCE
@@ -182,7 +197,7 @@ ggplot(plotdat[['measurement']], aes(x=value, fill=variable)) +
   scale_fill_brewer('Debris type', palette = 'Set2', labels = labs[['debris_meas']]) +
   coord_cartesian(ylim=c(0,0.2)) +
   theme_bw()
-ggsave(paste0(outpath,'plots/plt_measurement.png'), width = 6, height=4, dpi=300)
+ggsave(paste0(outpath,'plots/plt_measurement.png'), width = 7, height=3, dpi=300)
 
 
 #### RANK DEBRIS ####
@@ -193,7 +208,7 @@ ggplot(plotdat[['debris']][ , .(MEAN=mean(value), SD=sd(value)), by=.(variable,C
   geom_errorbar(aes(ymin=MEAN-SD, ymax=MEAN+SD), width=.5, position = position_dodge(.9)) +
   scale_y_continuous('Average rank (1-6)', expand=c(0, 0)) +
   scale_x_discrete('Debris type', labels = labs[['debris']]) +
-  scale_fill_brewer('Cyclist Type', palette = 'Set2', labels = labs[['type']]) +
+  scale_fill_brewer('Bicyclist Type', palette = 'Set2', labels = labs[['type']]) +
   coord_cartesian(ylim=c(0, 6)) +
   theme_bw() +
   theme(legend.position = 'bottom')
@@ -208,10 +223,11 @@ ggplot(plotdat[['visibility']][ , .(MEAN=mean(value), SD=sd(value)), by=.(variab
   geom_errorbar(aes(ymin=MEAN-SD, ymax=MEAN+SD), width=.5, position = position_dodge(.9)) +
   scale_y_continuous('Average rank (1-6)', expand=c(0, 0)) +
   scale_x_discrete('Location', labels = labs[['visibility']]) +
-  scale_fill_brewer('Cyclist Type', palette = 'Set2', labels = labs[['type']]) +
+  scale_fill_brewer('Bicyclist Type', palette = 'Set2', labels = labs[['type']]) +
   coord_cartesian(ylim=c(0, 7)) +
-  theme_bw()
-ggsave(paste0(outpath,'plots/plt_visibility.png'), width = 7, height=4, dpi=300)
+  theme_bw() +
+  theme(legend.position = 'bottom')
+ggsave(paste0(outpath,'plots/plt_visibility.png'), width = 7.5, height=4, dpi=300)
 
 
 #### MAX BUFFER DISTRIBUTION ####
@@ -219,10 +235,10 @@ ggplot(plotdat[['buffer_max']], aes(x=mean(9*survey_data$MAX_BUFFER),y=0.15)) +
   geom_col(aes(x=MAX_BUFFER, y=N, fill=CYCLIST_TYPE), color='black') +
   scale_y_continuous('Response rate (%)', labels = scales::percent, expand=c(0, 0)) +
   scale_x_continuous(paste('Maximum preferred buffer (ft)\n(Average:',round(mean(9*survey_data$MAX_BUFFER),2),'ft)')) +
-  scale_fill_brewer('Cyclist Type', palette = 'Set2', labels = labs[['type']]) +
+  scale_fill_brewer('Bicyclist Type', palette = 'Set2', labels = labs[['type']]) +
   coord_cartesian(ylim=c(0, .5)) +
   theme_bw()
-ggsave(paste0(outpath,'plots/plt_buffermax.png'), width = 6, height=4, dpi=300)
+ggsave(paste0(outpath,'plots/plt_buffermax.png'), width = 7, height=3, dpi=300)
 
 
 #### BUFFER BAR CHART ####
@@ -233,7 +249,7 @@ ggplot(plotdat[['buffer_dim']][ , .N, by=.(value,variable)][ , .(value=value, PC
   scale_x_continuous('Rank score (1-least to 6-most preferred)', breaks = 1:6, expand = c(0,0)) +
   scale_fill_brewer("Buffer type in image", palette = 'RdBu', labels = labs[['buffertype']]) +
   theme_bw()
-ggsave(paste0(outpath,'plots/plt_bufferdim.png'), width = 6, height=4, dpi=300)
+ggsave(paste0(outpath,'plots/plt_bufferdim.png'), width = 7, height = 3, dpi=300)
 
 
 #### GRID ####
@@ -280,15 +296,14 @@ ggplot(melt(plotdat[['buffer_dim']], value.name = 'DIST',
        aes(x=DIST, y=value, color=DIM)) +
   # geom_point(alpha=0.3) +
   stat_smooth(method='loess', span=1, se=T, fullrange=T) +
-  scale_color_brewer('Moving average score (LOESS:',
+  scale_color_brewer('Moving average score (LOESS):',
                      palette = 'Set1', , labels = c("WIDTH"="Width","HEIGHT"="Height")) +
   scale_x_log10('Buffer width and height in ft (log scale)', breaks = 1:12) +
   scale_y_log10('Preference ranking (1-6)', breaks = seq(0,6,0.5)) +
-  # scale_y_log10('Preference ranking (1-6) [log scale]') +
   coord_cartesian(xlim = c(0.75, 11), ylim = c(1,6)) +
   theme_bw() +
   theme(legend.position = 'bottom')
-ggsave(paste0(outpath,'plots/plt_bufferloess.png'), width = 5, height=4, dpi=300)
+ggsave(paste0(outpath,'plots/plt_bufferloess.png'), width = 7, height=4, dpi=300)
 
 
 #### FITTED BUFFER FUNCTION ####
@@ -310,20 +325,20 @@ labs[['Fw']] <- paste(sprintf('%.2f', seq(floor(min(plotdat[['grid']]$Fw)),-1, l
 ggplot(data.frame(x=c(0,20)), aes(x)) +
   stat_function(fun = function(x) func_Wbuf(x,0), aes(linetype = "h", color="h"), size=1) +
   stat_function(fun = function(x) func_Wbuf(0,x), aes(linetype = "v", color="v"), size=1) +
-  scale_x_continuous('Physical buffer distance, height or width (ft)', expand = c(0,0)) +
-  scale_y_continuous(expression('Effective buffer'~(W[buf]^"*")), expand = c(0,0)) +
-  scale_linetype('Buffer type', labels = labs[['coefs']]) +
-  scale_color_brewer('Buffer type', palette = 'Dark2', labels = labs[['coefs']]) +
+  scale_x_continuous('Physical buffer distance, height or width (ft)', breaks = seq(0,20,2), expand = c(0,0)) +
+  scale_y_continuous(expression('Effective buffer'~(W[buf]^"*")), breaks = seq(0,20,2), expand = c(0,0)) +
+  scale_linetype(NULL, labels = labs[['coefs']]) +
+  scale_color_brewer(NULL, palette = 'Dark2', labels = labs[['coefs']]) +
   theme_classic() +
   coord_cartesian(xlim=c(0,15), ylim=c(0,20)) +
-  theme(legend.position = c(0.8,0.4),
+  theme(legend.position = 'bottom', #c(0.8,0.4),
         legend.direction = 'vertical',
         legend.margin = margin(-2.5,0,0,0, unit="pt"),
         legend.key.height = unit(1, "pt"),
         legend.text.align = 0,
         legend.background = element_rect(colour = "transparent", fill = "transparent"),
         legend.key = element_rect(fill = "transparent", colour = "transparent"))
-ggsave(paste0(outpath,'plots/plt_effbuffer_coefs.png'), width = 6, height=4, dpi=300)
+ggsave(paste0(outpath,'plots/plt_effbuffer_coefs.png'), width = 6, height=3, dpi=300)
 
 
 #### BUFFER FUNC DENSITY FORM ####

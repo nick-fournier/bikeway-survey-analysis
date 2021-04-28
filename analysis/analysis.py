@@ -74,7 +74,8 @@ col_dict = {
     'PREF_MEAS': ['DEBRIS_MEAS_NON_PUNCT', 'DEBRIS_MEAS_PUNCT', 'DEBRIS_MEAS_SLIP',
                   'DEBRIS_MEAS_PARTICLES', 'DEBRIS_MEAS_PRECIP'],
     'OPEN_RESPONSE': ['OR_MEASUREMENTS', 'OR_FEATURES', 'MAX_BUFFER'],
-    'DEMOGS': ['AGE', 'GENDER', 'CYCLIST_TYPE', 'CYCLIST_FREQ']
+    # 'GROUP': ['STEADFAST', 'RELUCTANT'],
+    'DEMOGS': ['AGE', 'GENDER', 'CYCLIST_TYPE', 'CYCLIST_FREQ'] #, 'GROUP']
 }
 
 cyclist_type = {'Commuter (even if only pre-pandemic)':                 'COMMUTER',
@@ -99,7 +100,6 @@ width_height = {
     'CURBPROTECT':      {'WIDTH': 3,   'HEIGHT': 0.5}
 }
 
-
 class BikeAnalysis:
     def __init__(self, data_path, out_path):
         self.data_path = self.pathcheck(data_path)
@@ -109,7 +109,7 @@ class BikeAnalysis:
         self.data = self.clean_data(self.data_path)
 
         # Estimates width and height coefficients
-        self.buffer_coef, self.dim_data = self.buffer_fit()
+        self.buffer_coef_dict, self.dim_data = self.buffer_fit()
 
         # Gets mean aggregate ranking scores
         self.rank_scores = self.ranking_scores()
@@ -119,9 +119,9 @@ class BikeAnalysis:
 
         # Saving output
         self.save()
-
-        # Generate plots
-        self.plot()
+        #
+        # # Generate plots
+        # self.plot()
 
     def pathcheck(self, path):
         if os.path.isdir('.' + '/'.join(path.split('/')[:-1])):
@@ -151,6 +151,10 @@ class BikeAnalysis:
         cleaned.CYCLIST_TYPE = cleaned.CYCLIST_TYPE.replace(cyclist_type)
         cleaned.CYCLIST_FREQ = cleaned.CYCLIST_FREQ.replace(cyclist_freq)
 
+        # # Two types of bicyclists
+        # typefreq = pd.crosstab(index=cleaned.CYCLIST_TYPE, columns=cleaned.CYCLIST_FREQ)
+        # cleaned['GROUP'] = np.where(cleaned.CYCLIST_FREQ.isin(['DAILY', 'WEEKLY']), 'STEADFAST', 'RELUCTANT')
+
         # choice id
         cleaned.index = np.arange(len(cleaned))
         cleaned.index.name = 'chid'
@@ -172,20 +176,33 @@ class BikeAnalysis:
         # Merge width and height
         rank_data = rank_data.merge(df_heightwidth, on='variable')
 
+
         # Pass pandas DF to R DF and run MASS::polr()
-        f = 'factor(value) ~ WIDTH + HEIGHT + AGE + CYCLIST_TYPE + CYCLIST_FREQ + GENDER'
-        model_results = MASS.polr(formula=f, data=rank_data)
-        df_results = R.tidy(model_results)
+        f_list = {'simple': 'factor(value) ~ WIDTH + HEIGHT',
+                  'all': 'factor(value) ~ WIDTH + HEIGHT + AGE + CYCLIST_TYPE + CYCLIST_FREQ + GENDER',
+                  'byfreq': 'factor(value) ~ (WIDTH + HEIGHT):CYCLIST_FREQ',
+                  'bytype': 'factor(value) ~ (WIDTH + HEIGHT):CYCLIST_TYPE',
+                  'bytypefreq': 'factor(value) ~ (WIDTH + HEIGHT):(CYCLIST_TYPE+CYCLIST_FREQ)'
+                  }
 
-        # Get Degrees of Freedom
-        n = rank_data.shape[0]
-        nvars = df_results.loc[df_results['coef.type'] == 'coefficient'].shape[0]
-        DegFree = n - nvars - 1
+        df_dict = {}
+        for f in f_list:
+            print(f_list[f])
+            model_results = MASS.polr(formula=f_list[f], data=rank_data)
+            df_results = R.tidy(model_results)
 
-        # Calc p-value
-        df_results['p.value'] = stats.t.sf(np.abs(df_results.statistic), DegFree) * 2
+            # Get Degrees of Freedom
+            n = rank_data.shape[0]
+            nvars = df_results.loc[df_results['coef.type'] == 'coefficient'].shape[0]
+            DegFree = n - nvars - 1
 
-        return df_results, rank_data
+            # Calc p-value
+            df_results['p.value'] = stats.t.sf(np.abs(df_results.statistic), DegFree) * 2
+
+            # Add to output list
+            df_dict[f] = df_results
+
+        return df_dict, rank_data
 
     def ranking_scores(self):
         agg_cols = {}
@@ -205,10 +222,14 @@ class BikeAnalysis:
 
     def save(self):
         # Save to CSV
-        self.data.to_csv(self.outpath + '/cleaned_' + self.data_path.split('/')[-1])
-        self.buffer_coef.to_csv(self.outpath + '/buffer_coefs.csv')
+        self.data.to_csv(self.outpath + '/cleaned_survey_data.csv')
         self.dim_data.to_csv(self.outpath + '/buffer_dim_data.csv')
         self.measure_prefs.to_csv(self.outpath + '/measurement_prefs.csv')
+        # self.buffer_coef.to_csv(self.outpath + '/buffer_coefs.csv')
+
+        for df in self.buffer_coef_dict:
+            self.buffer_coef_dict[df].to_csv(self.outpath + '/buffer_coefs' + df + '.csv')
+
 
         # Serializing to json string
         json_object = json.dumps(self.rank_scores, indent=4)
@@ -220,5 +241,7 @@ class BikeAnalysis:
         R.source('R_plotting.R')
 
 if __name__ == "__main__":
-    path = './data/survey_data_download_latest.csv'
+    path = './data/QUALITY OF RIDE _ BICYCLE EDITION.csv.zip'
     results = BikeAnalysis(data_path=path, out_path='./output/')
+    # results.save()
+    # results.plot()
