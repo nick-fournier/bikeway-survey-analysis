@@ -17,6 +17,7 @@ from rpy2.robjects.packages import importr
 # Initialize packages
 MASS = importr('MASS')
 broom = importr('broom')
+perf = importr('performance')
 R = ro.r
 pandas2ri.activate()
 
@@ -109,7 +110,7 @@ class BikeAnalysis:
         self.data = self.clean_data(self.data_path)
 
         # Estimates width and height coefficients
-        self.buffer_coef_dict, self.dim_data = self.buffer_fit()
+        self.buffer_coef_dict, self.buffer_r2_dict, self.dim_data = self.buffer_fit()
 
         # Gets mean aggregate ranking scores
         self.rank_scores = self.ranking_scores()
@@ -118,7 +119,7 @@ class BikeAnalysis:
         self.measure_prefs = self.measure_counts()
 
         # Saving output
-        self.save()
+        # self.save()
         #
         # # Generate plots
         # self.plot()
@@ -176,7 +177,6 @@ class BikeAnalysis:
         # Merge width and height
         rank_data = rank_data.merge(df_heightwidth, on='variable')
 
-
         # Pass pandas DF to R DF and run MASS::polr()
         f_list = {'simple': 'factor(value) ~ WIDTH + HEIGHT',
                   'all': 'factor(value) ~ WIDTH + HEIGHT + AGE + CYCLIST_TYPE + CYCLIST_FREQ + GENDER',
@@ -186,10 +186,14 @@ class BikeAnalysis:
                   }
 
         df_dict = {}
+        r2_dict = {}
         for f in f_list:
             print(f_list[f])
-            model_results = MASS.polr(formula=f_list[f], data=rank_data)
+            null_model = MASS.polr(formula='factor(value) ~ 1', data=rank_data, Hess=False)
+            model_results = MASS.polr(formula=f_list[f], data=rank_data, Hess=False)
             df_results = R.tidy(model_results)
+            # rsquared = float(1 - R.logLik(model_results) / R.logLik(null_model))
+            rsquared = float(R.r2(model_results).rx2['R2_Nagelkerke'])
 
             # Get Degrees of Freedom
             n = rank_data.shape[0]
@@ -201,8 +205,9 @@ class BikeAnalysis:
 
             # Add to output list
             df_dict[f] = df_results
+            r2_dict[f] = rsquared
 
-        return df_dict, rank_data
+        return df_dict, r2_dict, rank_data
 
     def ranking_scores(self):
         agg_cols = {}
@@ -237,11 +242,18 @@ class BikeAnalysis:
         with open(self.outpath + '/avg_ranks.json', 'w') as f:
             f.write(json_object)
 
+        # Serializing to json string
+        json_object = json.dumps(self.buffer_r2_dict, indent=4)
+        # Writing to .json
+        with open(self.outpath + '/buffer_r2.json', 'w') as f:
+            f.write(json_object)
+
     def plot(self):
         R.source('R_plotting.R')
 
 if __name__ == "__main__":
     path = './data/QUALITY OF RIDE _ BICYCLE EDITION.csv.zip'
     results = BikeAnalysis(data_path=path, out_path='./output/')
-    # results.save()
+
+    results.save()
     # results.plot()
