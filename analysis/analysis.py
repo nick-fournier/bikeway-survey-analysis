@@ -13,6 +13,7 @@ from rpy2.robjects.packages import importr
 # utils.chooseCRANmirror(ind=1)
 # utils.install_packages('MASS')
 # utils.install_packages('broom')
+# utils.install_packages('performance')
 
 # Initialize packages
 MASS = importr('MASS')
@@ -20,7 +21,6 @@ broom = importr('broom')
 perf = importr('performance')
 R = ro.r
 pandas2ri.activate()
-
 
 new_colnames = {'Timestamp': 'TIMESTAMP',
                 'Username': 'USERNAME',
@@ -110,7 +110,10 @@ class BikeAnalysis:
         self.data = self.clean_data(self.data_path)
 
         # Estimates width and height coefficients
-        self.buffer_coef_dict, self.buffer_r2_dict, self.dim_data = self.buffer_fit()
+        self.buffer_coef_dict, self.buffer_r2_dict, self.dim_data = self.buffer_models(noparking=False)
+
+        # Try it with parking protected removed
+        self.buffer_coef_dict_np, self.buffer_r2_dict_np, self.dim_data_np = self.buffer_models(noparking=True)
 
         # Gets mean aggregate ranking scores
         self.rank_scores = self.ranking_scores()
@@ -162,7 +165,56 @@ class BikeAnalysis:
 
         return cleaned
 
-    def buffer_fit(self):
+    def remove_parking_data(self, rank_data):
+
+        noparking_data = rank_data.sort_values('chid').copy()
+
+        for i in noparking_data.chid.unique():
+            ch = noparking_data[noparking_data.chid == i]
+            mask = ch[ch.value > ch[ch.variable == 'PARKINGPROTECT'].value.item()]
+            noparking_data.loc[mask.index, 'value'] -= 1
+            noparking_data = noparking_data.drop(index=ch[ch.variable == 'PARKINGPROTECT'].index)
+
+        return noparking_data
+
+    def buffer_fit(self, data):
+        # Pass pandas DF to R DF and run MASS::polr()
+        f_list = {'simple': 'factor(value) ~ WIDTH + HEIGHT',
+                  'all': 'factor(value) ~ WIDTH + HEIGHT + AGE + CYCLIST_TYPE + CYCLIST_FREQ + GENDER',
+                  'byfreq': 'factor(value) ~ (WIDTH + HEIGHT):CYCLIST_FREQ',
+                  'bytype': 'factor(value) ~ (WIDTH + HEIGHT):CYCLIST_TYPE',
+                  'bytypefreq': 'factor(value) ~ (WIDTH + HEIGHT):(CYCLIST_TYPE+CYCLIST_FREQ)'
+                  }
+
+        df_dict = {}
+        r2_dict = {}
+
+        for f in f_list:
+            print(f_list[f])
+            try:
+                model_results = MASS.polr(formula=f_list[f], data=data, Hess=False)
+                # null_model = MASS.polr(formula='factor(value) ~ 1', data=rank_data, Hess=False)
+                # rsquared = float(1 - R.logLik(model_results) / R.logLik(null_model))
+                rsquared = float(R.r2(model_results).rx2['R2_Nagelkerke'])
+                df_results = R.tidy(model_results)
+
+                # Get Degrees of Freedom
+                n = data.shape[0]
+                nvars = df_results.loc[df_results['coef.type'] == 'coefficient'].shape[0]
+                DegFree = n - nvars - 1
+
+                # Calc p-value
+                df_results['p.value'] = stats.t.sf(np.abs(df_results.statistic), DegFree) * 2
+
+                # Add to output list
+                df_dict[f] = df_results
+                r2_dict[f] = rsquared
+            except:
+                pass
+
+        return df_dict, r2_dict
+
+    def buffer_models(self, noparking=False):
         # Reshape to long form
         rank_data = pd.melt(self.data.reset_index(),
                             id_vars=['chid'] + col_dict['DEMOGS'],
@@ -177,35 +229,11 @@ class BikeAnalysis:
         # Merge width and height
         rank_data = rank_data.merge(df_heightwidth, on='variable')
 
-        # Pass pandas DF to R DF and run MASS::polr()
-        f_list = {'simple': 'factor(value) ~ WIDTH + HEIGHT',
-                  'all': 'factor(value) ~ WIDTH + HEIGHT + AGE + CYCLIST_TYPE + CYCLIST_FREQ + GENDER',
-                  'byfreq': 'factor(value) ~ (WIDTH + HEIGHT):CYCLIST_FREQ',
-                  'bytype': 'factor(value) ~ (WIDTH + HEIGHT):CYCLIST_TYPE',
-                  'bytypefreq': 'factor(value) ~ (WIDTH + HEIGHT):(CYCLIST_TYPE+CYCLIST_FREQ)'
-                  }
+        # Remove parking protected to test it's impact
+        if noparking:
+            rank_data = self.remove_parking_data(rank_data)
 
-        df_dict = {}
-        r2_dict = {}
-        for f in f_list:
-            print(f_list[f])
-            null_model = MASS.polr(formula='factor(value) ~ 1', data=rank_data, Hess=False)
-            model_results = MASS.polr(formula=f_list[f], data=rank_data, Hess=False)
-            df_results = R.tidy(model_results)
-            # rsquared = float(1 - R.logLik(model_results) / R.logLik(null_model))
-            rsquared = float(R.r2(model_results).rx2['R2_Nagelkerke'])
-
-            # Get Degrees of Freedom
-            n = rank_data.shape[0]
-            nvars = df_results.loc[df_results['coef.type'] == 'coefficient'].shape[0]
-            DegFree = n - nvars - 1
-
-            # Calc p-value
-            df_results['p.value'] = stats.t.sf(np.abs(df_results.statistic), DegFree) * 2
-
-            # Add to output list
-            df_dict[f] = df_results
-            r2_dict[f] = rsquared
+        df_dict, r2_dict = self.buffer_fit(rank_data)
 
         return df_dict, r2_dict, rank_data
 
@@ -230,22 +258,32 @@ class BikeAnalysis:
         self.data.to_csv(self.outpath + '/cleaned_survey_data.csv')
         self.dim_data.to_csv(self.outpath + '/buffer_dim_data.csv')
         self.measure_prefs.to_csv(self.outpath + '/measurement_prefs.csv')
-        # self.buffer_coef.to_csv(self.outpath + '/buffer_coefs.csv')
 
+        # Save model results to csv
         for df in self.buffer_coef_dict:
             self.buffer_coef_dict[df].to_csv(self.outpath + '/buffer_coefs' + df + '.csv')
+        # Save model results without parking protected
+        for df in self.buffer_coef_dict_np:
+            self.buffer_coef_dict_np[df].to_csv(self.outpath + '/buffer_coefs_np' + df + '.csv')
 
-
+        # Saving avg scores
         # Serializing to json string
         json_object = json.dumps(self.rank_scores, indent=4)
         # Writing to .json
         with open(self.outpath + '/avg_ranks.json', 'w') as f:
             f.write(json_object)
 
+        # Saving model R squared fit
         # Serializing to json string
         json_object = json.dumps(self.buffer_r2_dict, indent=4)
         # Writing to .json
         with open(self.outpath + '/buffer_r2.json', 'w') as f:
+            f.write(json_object)
+
+        # Saving model R squared fit without parking protected
+        json_object = json.dumps(self.buffer_r2_dict_np, indent=4)
+        # Writing to .json
+        with open(self.outpath + '/buffer_r2_np.json', 'w') as f:
             f.write(json_object)
 
     def plot(self):

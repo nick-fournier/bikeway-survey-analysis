@@ -1,5 +1,5 @@
 # Title     : Bike survey analysis plots
-# Objective : Generate nice looking plots using ggplo2
+# Objective : Generate nice looking plots using ggplot2
 # Created by: nick Fournier
 # Created on: 4/14/2021
 
@@ -139,6 +139,7 @@ if(length(list.files('../output')) > 0) {
 survey_data <- fread(paste0(outpath,'cleaned_survey_data.csv'))[!is.na(MAX_BUFFER),]
 dim_data <- fread(paste0(outpath,'buffer_dim_data.csv'))
 coef_data <- fread(paste0(outpath,'buffer_coefssimple.csv'))
+coef_data <- fread(paste0(outpath,'buffer_coefs_npsimple.csv'))
 
 dir.create('./output/plots', showWarnings = FALSE)
 plotdat <- get_plotdat(surveydata=survey_data, dimdata=dim_data)
@@ -247,7 +248,17 @@ ggplot(plotdat[['buffer_dim']][ , .N, by=.(value,variable)][ , .(value=value, PC
   geom_col(color='black') +
   scale_y_continuous('Response rate (%)', labels = scales::percent, expand=c(0, 0)) +
   scale_x_continuous('Rank score (1-least to 6-most preferred)', breaks = 1:6, expand = c(0,0)) +
-  scale_fill_brewer("Buffer type in image", palette = 'RdBu', labels = labs[['buffertype']]) +
+  scale_fill_brewer("Buffer type in image", palette = 'Accent', labels = labs[['buffertype']]) +
+  theme_bw()
+ggsave(paste0(outpath,'plots/plt_bufferdim.png'), width = 7, height = 3, dpi=300)
+
+#### BUFFER BAR CHART DODGE ####
+ggplot(plotdat[['buffer_dim']][ , .N, by=.(value,variable)][ , .(value=value, PCT=N/sum(N)), by=variable],
+       aes(x=value, y=PCT, fill=variable)) +
+  geom_col(color='black', position='dodge') +
+  scale_y_continuous('Response rate (%)', labels = scales::percent, expand=c(0, 0)) +
+  scale_x_continuous('Rank score (1-least to 6-most preferred)', breaks = 1:6, expand = c(0,0)) +
+  scale_fill_brewer("Buffer type in image", palette = 'Accent', labels = labs[['buffertype']]) +
   theme_bw()
 ggsave(paste0(outpath,'plots/plt_bufferdim.png'), width = 7, height = 3, dpi=300)
 
